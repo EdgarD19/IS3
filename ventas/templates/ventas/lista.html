@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">Ventas</h2>
+<a href="{% url 'crear_venta' %}" class="btn btn-primary">Nueva Venta</a>
+<table class="min-w-full bg-white border border-gray-200">
+    <thead>
+        <tr>
+            <th class="py-2 px-4 border-b">Factura</th>
+            <th class="py-2 px-4 border-b">Modalidad</th>
+            <th class="py-2 px-4 border-b">Observación</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for venta in ventas %}
+        <tr class="hover:bg-gray-100">
+            <td class="py-2 px-4 border-b">{{ venta.factura.numero }}</td>
+            <td class="py-2 px-4 border-b">{{ venta.get_modalidad_display }}</td>
+            <td class="py-2 px-4 border-b">{{ venta.observacion }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
