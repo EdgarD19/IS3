@@ -39,10 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'clientes',
-    'cuentas_cobrar',
     'facturacion',
-    'pagos',
     'ventas',
+    'proveedores',
+    'compras',
+    'inventario',
     
 ]
 

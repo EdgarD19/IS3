@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Lista de Compras</h1>
+<a href="{% url 'nueva_compra' %}" class="btn btn-primary mb-3">Nueva Compra</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Proveedor</th>
+            <th>Fecha</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for compra in compras %}
+        <tr>
+            <td>{{ compra.numero }}</td>
+            <td>{{ compra.proveedor.nombre }}</td>
+            <td>{{ compra.fecha|date:"d/m/Y" }}</td>
+            <td>{{ compra.total|floatformat:2 }}</td>
+            <td>{{ compra.estado }}</td>
+            <td>
+                <a href="{% url 'detalle_compra' compra.id %}" class="btn btn-sm btn-info">Ver Detalle</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">No hay compras registradas.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

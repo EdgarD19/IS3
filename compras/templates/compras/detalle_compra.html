@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-shopping-cart me-2"></i>DETALLE DE COMPRA</h2>
+        <a href="{% url 'lista_compras' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Listado
+        </a>
+    </div>
+    
+    <!-- Tarjeta de Información de Compra -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información de la Compra</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr><th class="w-50">Proveedor:</th><td>{{ compra.proveedor.nombre }}</td></tr>
+                        <tr><th>Compra N°:</th><td>{{ compra.numero }}</td></tr>
+                        <tr><th>Fecha:</th><td>{{ compra.fecha|date:"d/m/Y" }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr><th class="w-50">Moneda:</th><td>{{ compra.moneda }}</td></tr>
+                        <tr><th>Total:</th><td>{{ compra.total|floatformat:2 }}</td></tr>
+                        <tr><th>Modalidad:</th>
+                            <td>
+                                {% if compra.modalidad == 'CO' %}
+                                    <span class="badge bg-success">CONTADO</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">CRÉDITO</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Detalles de Productos -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos Comprados</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                        <tr>
+                            <td>{{ detalle.producto.nombre }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td>{{ detalle.precio_unitario|floatformat:2 }}</td>
+                            <td>{{ detalle.subtotal|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No hay productos registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-active">
+                            <th colspan="3" class="text-end">Total:</th>
+                            <th>{{ compra.total|floatformat:2 }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if compra.modalidad == 'CR' %}
+    <!-- Sección de Plan de Pagos -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Plan de Pagos</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cuota</th>
+                            <th>Importe</th>
+                            <th>Vence</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pago in pagos %}
+                        <tr class="{% if pago.fecha_pago %}table-success{% endif %}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ pago.monto|floatformat:2 }}</td>
+                            <td>{{ pago.fecha_vencimiento|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if pago.fecha_pago %}
+                                    <span class="badge bg-success">PAGADO</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">PENDIENTE</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not pago.fecha_pago %}
+                                <!-- Botón que abre el modal -->
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalPagar{{ pago.id }}">
+                                    <i class="fas fa-money-bill-wave me-1"></i>Registrar Pago
+                                </button>
+
+                                <!-- Modal -->
+                                <div class="modal fade" id="modalPagar{{ pago.id }}" tabindex="-1" aria-labelledby="modalPagarLabel{{ pago.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'registrar_pago_compra' pago.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title" id="modalPagarLabel{{ pago.id }}"><i class="fas fa-exclamation-circle me-2"></i>Confirmar Pago</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>¿Estás seguro de que querés registrar el pago de la cuota <strong>#{{ forloop.counter }}</strong>?</p>
+                                                    <p>Monto: <strong>{{ pago.monto|floatformat:2 }} {{ compra.moneda }}</strong></p>
+                                                    <p>Vence: {{ pago.fecha_vencimiento|date:"d/m/Y" }}</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-success">Confirmar Pago</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No se han programado pagos</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Resumen del Crédito -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card border-primary">
+                        <div class="card-header bg-light">Resumen del Crédito</div>
+                        <div class="card-body">
+                            <p><strong>Total:</strong> {{ compra.total|floatformat:2 }}</p>
+                            <p><strong>Pagado:</strong> {{ compra.total_pagado|floatformat:2 }}</p>
+                            <p><strong>Saldo Pendiente:</strong> {{ compra.saldo_pendiente|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

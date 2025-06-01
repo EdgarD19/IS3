@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4"><i class="fas fa-shopping-cart me-2"></i>Nueva Compra</h2>
+
+    <form method="post" id="compra-form" class="needs-validation" novalidate>
+
+        {% csrf_token %}
+
+        <!-- Datos de la Compra -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Datos de la Compra</h4>
+            </div>
+            <div class="card-body row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.proveedor.id_for_label }}" class="form-label">Proveedor:</label>
+                    {{ form.proveedor }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_numero" class="form-label">Número:</label>
+                    <input type="text" class="form-control" id="id_numero" name="numero" value="{{ form.numero.value|default:'' }}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label for="id_fecha" class="form-label">Fecha:</label>
+                    <input type="date" class="form-control" id="id_fecha" name="fecha" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="id_moneda" class="form-label">Moneda:</label>
+                    <select class="form-select" id="id_moneda" name="moneda" required>
+                        <option value="PYG" selected>Guaraní (PYG)</option>
+                        <option value="USD">Dólar (USD)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalles -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-list me-2"></i>Detalle de la Compra</h4>
+            </div>
+            <div class="card-body">
+                {{ formset.management_form }}
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" id="productos-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario</th>
+                                <th>Subtotal</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in formset.forms %}
+                            <tr class="producto-form">
+                                <td>
+                                    {{ form.producto_nombre }}
+                                    {{ form.id }}
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        {{ form.cantidad }}
+                                        <span class="input-group-text">{{ form.producto_nombre.unidad_medida }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ form.moneda.value|default:"PYG" }}</span>
+                                        {{ form.precio_unitario }}
+                                    </div>
+                                </td>
+                                <td class="subtotal">
+                                    0.00
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-danger btn-sm remove-row">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                <td colspan="2" class="text-start"><strong id="total-compra">0.00</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="text-end mt-3">
+                    <button type="button" class="btn btn-success" id="add-product-btn">
+                        <i class="fas fa-plus-circle me-2"></i>Añadir Producto
+                    </button>
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalPago">
+                        <i class="fas fa-wallet me-2"></i>Configurar Modalidad de Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'lista_compras' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+            <button type="submit" class="btn btn-success" id="guardar-compra">
+                <i class="fas fa-save me-2"></i>Guardar Compra
+            </button>
+        </div>
+
+        <!-- Modal -->
+<div class="modal fade" id="modalPago" tabindex="-1" aria-labelledby="modalPagoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalPagoLabel"><i class="fas fa-credit-card me-2"></i>Modalidad de Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="modalidad" id="modalidad_contado" value="CO" checked>
+                            <label class="form-check-label fw-bold" for="modalidad_contado">
+                                <span class="badge bg-success">CONTADO</span> - Pago inmediato
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="modalidad" id="modalidad_credito" value="CR">
+                            <label class="form-check-label fw-bold" for="modalidad_credito">
+                                <span class="badge bg-warning text-dark">CRÉDITO</span> - Pago a plazos
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="credito-section" style="display: none;">
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Configuración de Crédito</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="id_cantidad_cuotas" class="form-label">Cantidad de cuotas:</label>
+                                    <input type="number" class="form-control" name="cantidad_cuotas" id="id_cantidad_cuotas" min="1" value="3">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="id_fecha_inicio" class="form-label">Fecha inicio:</label>
+                                    <input type="date" class="form-control" name="fecha_inicio" id="id_fecha_inicio" value="{{ fecha_actual|date:'Y-m-d' }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="id_dias_vencimiento" class="form-label">Días de vencimiento:</label>
+                                    <input type="text" class="form-control" name="dias_vencimiento" id="id_dias_vencimiento" placeholder="30,45,60" value="30,60,90">
+                                    <small class="form-text text-muted">Separados por comas (ejemplo: 30,60,90)</small>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Tipo de vencimiento:</label><br>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="tipo_vencimiento" id="vencimiento_regular" value="regular" checked>
+                                        <label class="form-check-label" for="vencimiento_regular">Regular</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="tipo_vencimiento" id="vencimiento_irregular" value="irregular">
+                                        <label class="form-check-label" for="vencimiento_irregular">Irregular</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-list-ol me-2"></i>Previsualización de Cuotas</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Cuota</th>
+                                            <th>Importe</th>
+                                            <th>Fecha Vencimiento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuotas-body">
+                                        <!-- Dinámico -->
+                                        <tr>
+                                            <td>1/3</td>
+                                            <td>20000.00</td>
+                                            <td>15/06/2025</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2/3</td>
+                                            <td>20000.00</td>
+                                            <td>15/07/2025</td>
+                                        </tr>
+                                        <tr>
+                                            <td>3/3</td>
+                                            <td>20000.00</td>
+                                            <td>15/08/2025</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="confirmar-pago">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. VARIABLES PRINCIPALES
+    const formsetBody = document.querySelector('#productos-table tbody');
+    const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+    const addProductBtn = document.getElementById('add-product-btn');
+    const totalCompraSpan = document.getElementById('total-compra');
+    const compraForm = document.getElementById('compra-form');
+    const guardarCompraBtn = document.getElementById('guardar-compra');
+
+    // 2. VARIABLES MODAL PAGO
+    const modalidadCredito = document.getElementById("modalidad_credito");
+    const modalidadContado = document.getElementById("modalidad_contado");
+    const creditoSection = document.getElementById("credito-section");
+    const cantidadCuotasInput = document.getElementById('id_cantidad_cuotas');
+    const fechaInicioInput = document.getElementById('id_fecha_inicio');
+    const diasVencimientoInput = document.getElementById('id_dias_vencimiento');
+    const tipoVencimientoRadios = document.querySelectorAll('input[name="tipo_vencimiento"]');
+    const cuotasBody = document.getElementById('cuotas-body');
+    const confirmarPagoBtn = document.getElementById('confirmar-pago');
+    const modalPago = new bootstrap.Modal(document.getElementById('modalPago'));
+
+    // 3. FUNCIÓN PARA CALCULAR TOTALES
+    function updateTotals() {
+        let total = 0;
+        
+        document.querySelectorAll('.producto-form').forEach(row => {
+            const cantidad = parseFloat(row.querySelector('input[name$="-cantidad"]').value) || 0;
+            const precio = parseFloat(row.querySelector('input[name$="-precio_unitario"]').value) || 0;
+            const subtotal = cantidad * precio;
+            
+            row.querySelector('.subtotal').textContent = subtotal.toFixed(2);
+            total += subtotal;
+        });
+        
+        totalCompraSpan.textContent = total.toFixed(2);
+        return total;
+    }
+
+    // 4. FUNCIÓN PARA GENERAR CUOTAS
+    function generarCuotas() {
+        if (!modalidadCredito.checked) return;
+        
+        const totalCompra = parseFloat(totalCompraSpan.textContent) || 0;
+        const cantidadCuotas = parseInt(cantidadCuotasInput.value) || 1;
+        const fechaInicio = fechaInicioInput.value;
+        const diasVencimiento = diasVencimientoInput.value;
+        const tipoVencimiento = document.querySelector('input[name="tipo_vencimiento"]:checked').value;
+        
+        cuotasBody.innerHTML = '';
+        
+        if (!fechaInicio || totalCompra <= 0) return;
+        
+        const importeCuota = (totalCompra / cantidadCuotas).toFixed(2);
+        const fechaBase = new Date(fechaInicio);
+        
+        for (let i = 0; i < cantidadCuotas; i++) {
+            const tr = document.createElement('tr');
+            const fechaVencimiento = new Date(fechaBase);
+            
+            if (tipoVencimiento === 'regular') {
+                fechaVencimiento.setMonth(fechaVencimiento.getMonth() + (i + 1));
+            } else {
+                const diasArray = diasVencimiento.split(',').map(d => parseInt(d.trim()));
+                const dias = diasArray[i] || (i + 1) * 30;
+                fechaVencimiento.setDate(fechaVencimiento.getDate() + dias);
+            }
+            
+            const dia = String(fechaVencimiento.getDate()).padStart(2, '0');
+            const mes = String(fechaVencimiento.getMonth() + 1).padStart(2, '0');
+            const fechaFormateada = `${dia}/${mes}/${fechaVencimiento.getFullYear()}`;
+            
+            tr.innerHTML = `
+                <td>${i + 1}/${cantidadCuotas}</td>
+                <td>${importeCuota}</td>
+                <td>${fechaFormateada}</td>
+            `;
+            cuotasBody.appendChild(tr);
+        }
+    }
+
+    // 5. MANEJO DEL FORMSET (AÑADIR/ELIMINAR PRODUCTOS)
+    if (firstRow = formsetBody.querySelector('tr')) {
+        const emptyForm = firstRow.cloneNode(true);
+        
+        function addProductRow() {
+            const currentForms = parseInt(totalFormsInput.value);
+            const newRow = emptyForm.cloneNode(true);
+            
+            newRow.querySelectorAll('input').forEach(input => {
+                const name = input.name.replace(/-(\d+)-/, `-${currentForms}-`);
+                const id = input.id.replace(/-(\d+)-/, `-${currentForms}-`);
+                input.name = name;
+                input.id = id;
+                if (!input.name.includes('DELETE') && input.type !== 'hidden') {
+                    input.value = '';
+                }
+            });
+            
+            newRow.querySelector('.remove-row').addEventListener('click', function() {
+                if (formsetBody.querySelectorAll('tr').length > 1) {
+                    newRow.remove();
+                    totalFormsInput.value = formsetBody.querySelectorAll('tr').length;
+                    updateTotals();
+                    generarCuotas();
+                }
+            });
+            
+            formsetBody.appendChild(newRow);
+            totalFormsInput.value = currentForms + 1;
+            newRow.querySelector('input[name$="-producto_nombre"]').focus();
+        }
+        
+        addProductBtn.addEventListener('click', addProductRow);
+        
+        formsetBody.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-row')) {
+                const row = e.target.closest('tr');
+                if (formsetBody.querySelectorAll('tr').length > 1) {
+                    row.remove();
+                    totalFormsInput.value = formsetBody.querySelectorAll('tr').length;
+                    updateTotals();
+                    generarCuotas();
+                }
+            }
+        });
+    }
+
+    // 6. EVENTOS PARA ACTUALIZAR TOTALES Y CUOTAS
+    formsetBody.addEventListener('input', function(e) {
+        if (e.target.name.includes('-cantidad') || e.target.name.includes('-precio_unitario')) {
+            updateTotals();
+            generarCuotas();
+        }
+    });
+
+    // 7. CONFIGURACIÓN DEL MODAL DE PAGO
+    function toggleCreditoSection() {
+        creditoSection.style.display = modalidadCredito.checked ? 'block' : 'none';
+        if (modalidadCredito.checked) generarCuotas();
+    }
+    
+    // Establecer fecha actual si no hay valor
+    if (fechaInicioInput && !fechaInicioInput.value) {
+        fechaInicioInput.value = new Date().toISOString().substr(0, 10);
+    }
+    
+    // Event listeners para el modal
+    modalidadCredito.addEventListener('change', toggleCreditoSection);
+    modalidadContado.addEventListener('change', toggleCreditoSection);
+    
+    cantidadCuotasInput.addEventListener('input', generarCuotas);
+    fechaInicioInput.addEventListener('change', generarCuotas);
+    diasVencimientoInput.addEventListener('input', generarCuotas);
+    
+    tipoVencimientoRadios.forEach(radio => {
+        radio.addEventListener('change', generarCuotas);
+    });
+
+    // 8. BOTÓN CONFIRMAR MODAL
+    if (confirmarPagoBtn) {
+        confirmarPagoBtn.addEventListener('click', function() {
+            modalPago.hide();
+            // Puedes agregar aquí lógica para guardar la configuración de pago
+        });
+    }
+
+    // 9. VALIDACIÓN ANTES DE ENVIAR EL FORMULARIO
+    if (compraForm) {
+        compraForm.addEventListener('submit', function(e) {
+            // Validación básica - asegurar que hay al menos un producto
+            const totalProductos = parseInt(totalFormsInput.value) || 0;
+            if (totalProductos === 0) {
+                e.preventDefault();
+                alert('Debe agregar al menos un producto a la compra');
+                return;
+            }
+            
+            // Validar que el total sea mayor que 0
+            const totalCompra = parseFloat(totalCompraSpan.textContent) || 0;
+            if (totalCompra <= 0) {
+                e.preventDefault();
+                alert('El total de la compra debe ser mayor a cero');
+                return;
+            }
+            
+            // Si todo está bien, el formulario se enviará normalmente
+            if (guardarCompraBtn) {
+                guardarCompraBtn.disabled = true;
+                guardarCompraBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+            }
+        });
+    }
+
+    // 10. INICIALIZACIÓN
+    updateTotals();
+    toggleCreditoSection();
+});
+</script>
+{% endblock %}

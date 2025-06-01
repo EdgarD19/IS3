@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from clientes.views import home
+from proveedores.views import home
 
 urlpatterns = [
     path('', home, name='home'),
@@ -24,5 +25,7 @@ urlpatterns = [
     path('clientes/', include('clientes.urls')),
     path('facturas/', include('facturacion.urls')),
     path('ventas/', include('ventas.urls')),
-    path('cuentas_cobrar/', include('cuentas_cobrar.urls')),
+    path('compras/', include('compras.urls')),
+    path('proveedores/', include('proveedores.urls')),
+    
 ]

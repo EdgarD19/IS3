@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4"><i class="fas fa-file-invoice me-2"></i>Nueva Factura</h2>
+
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}    
+
+        <!-- Sección de Datos Básicos -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Datos de la Factura</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="id_cliente" class="form-label">Cliente:</label>
+                        <select class="form-select" id="id_cliente" name="cliente" required>
+                            <option value="" selected disabled>Seleccione un cliente</option>
+                            {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="id_numero" class="form-label">Número:</label>
+                        <input type="text" class="form-control" id="id_numero" name="numero" required value="{{ form.numero.value|default:'' }}" readonly>
+
+                    </div>
+                    <div class="col-md-4">
+                        <label for="id_fecha" class="form-label">Fecha:</label>
+                        <input type="date" class="form-control" id="id_fecha" name="fecha" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="id_moneda" class="form-label">Moneda:</label>
+                        <select class="form-select" id="id_moneda" name="moneda" required>
+                            <option value="PYG" selected>Guaraní (PYG)</option>
+                            <option value="USD">Dólar (USD)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="id_total" class="form-label">Total:</label>
+                        <input type="number" class="form-control" id="id_total" name="total" step="0.01" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Modalidad -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Modalidad de Pago</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="modalidad" id="modalidad_contado" value="CO" checked>
+                            <label class="form-check-label" for="modalidad_contado">
+                                <span class="badge bg-success">CONTADO</span> - Pago inmediato
+                            </label>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="modalidad" id="modalidad_credito" value="CR">
+                            <label class="form-check-label" for="modalidad_credito">
+                                <span class="badge bg-warning text-dark">CRÉDITO</span> - Pago a plazos
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Crédito -->
+        <div id="credito-section" class="card mb-4 shadow-sm" style="display: none;">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Configuración de Crédito</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="id_cantidad_cuotas" class="form-label">Cantidad de cuotas:</label>
+                        <input type="number" class="form-control" id="id_cantidad_cuotas" name="cantidad_cuotas" min="1" value="3">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="id_fecha_inicio" class="form-label">Fecha inicio:</label>
+                        <input type="date" class="form-control" id="id_fecha_inicio" name="fecha_inicio">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="id_dias_vencimiento" class="form-label">Días de vencimiento:</label>
+                        <input type="text" class="form-control" id="id_dias_vencimiento" name="dias_vencimiento" placeholder="30,60,90">
+                        <small class="form-text text-muted">Separados por comas (ejemplo: 30,60,90)</small>
+                    </div>
+                </div>
+
+                <!-- Tipo de vencimiento -->
+                <div class="row mt-3" id="tipo-vencimiento-container" style="display: none;">
+                    <div class="col-md-12">
+                        <label class="form-label">Tipo de vencimiento:</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="tipo_vencimiento" id="vencimiento_regular" value="regular" checked>
+                            <label class="form-check-label" for="vencimiento_regular">Regular</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="tipo_vencimiento" id="vencimiento_irregular" value="irregular">
+                            <label class="form-check-label" for="vencimiento_irregular">Irregular</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista previa de cuotas -->
+                <div class="mt-4" id="cuotas-preview" style="display: none;">
+                    <h5><i class="fas fa-list-ol me-2"></i>Previsualización de Cuotas</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Cuota</th>
+                                    <th>Importe</th>
+                                    <th>Fecha Vencimiento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cuotas-body">
+                                <!-- Generado por JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'lista_facturas' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Guardar Factura
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('id_fecha').value = today;
+    document.getElementById('id_fecha_inicio').value = today;
+
+    const modalidadContado = document.getElementById('modalidad_contado');
+    const modalidadCredito = document.getElementById('modalidad_credito');
+    const creditoSection = document.getElementById('credito-section');
+    const cuotasPreview = document.getElementById('cuotas-preview');
+    const tipoVencimientoContainer = document.getElementById('tipo-vencimiento-container');
+
+    function toggleCreditoSection() {
+        const isCredito = modalidadCredito.checked;
+        creditoSection.style.display = isCredito ? 'block' : 'none';
+        tipoVencimientoContainer.style.display = isCredito ? 'block' : 'none';
+
+        document.querySelectorAll('#credito-section input').forEach(field => {
+            field.required = isCredito;
+        });
+
+        generarPreviewCuotas();
+    }
+
+    function generarPreviewCuotas() {
+        const cantidadCuotas = parseInt(document.getElementById('id_cantidad_cuotas').value) || 0;
+        const diasVencimiento = document.getElementById('id_dias_vencimiento').value;
+        const fechaInicio = document.getElementById('id_fecha_inicio').value;
+        const total = parseFloat(document.getElementById('id_total').value) || 0;
+        const cuotasBody = document.getElementById('cuotas-body');
+        const tipoVencimiento = document.querySelector('input[name="tipo_vencimiento"]:checked')?.value;
+
+        if (!fechaInicio || !diasVencimiento || cantidadCuotas <= 0 || total <= 0) {
+            cuotasPreview.style.display = 'none';
+            return;
+        }
+
+        const diasArray = diasVencimiento.split(',').map(d => parseInt(d.trim()));
+        const importeCuota = (total / cantidadCuotas).toFixed(2);
+        let html = '';
+        let fechaBase = new Date(fechaInicio);
+
+        for (let i = 0; i < cantidadCuotas; i++) {
+            let fechaVencimiento = new Date(fechaBase);
+
+            if (tipoVencimiento === 'regular') {
+                fechaVencimiento.setMonth(fechaBase.getMonth() + 1);
+            } else {
+                const dias = diasArray[i] || diasArray[diasArray.length - 1];
+                fechaVencimiento.setDate(fechaBase.getDate() + dias);
+            }
+
+            html += `
+                <tr>
+                    <td>${i + 1}/${cantidadCuotas}</td>
+                    <td>${importeCuota}</td>
+                    <td>${fechaVencimiento.toLocaleDateString('es-PY')}</td>
+                </tr>
+            `;
+
+            fechaBase = new Date(fechaVencimiento);
+        }
+
+        cuotasBody.innerHTML = html;
+        cuotasPreview.style.display = 'block';
+    }
+
+    modalidadContado.addEventListener('change', toggleCreditoSection);
+    modalidadCredito.addEventListener('change', toggleCreditoSection);
+    document.getElementById('id_cantidad_cuotas').addEventListener('change', generarPreviewCuotas);
+    document.getElementById('id_dias_vencimiento').addEventListener('input', generarPreviewCuotas);
+    document.getElementById('id_fecha_inicio').addEventListener('change', generarPreviewCuotas);
+    document.getElementById('id_total').addEventListener('input', generarPreviewCuotas);
+    document.getElementById('vencimiento_regular').addEventListener('change', generarPreviewCuotas);
+    document.getElementById('vencimiento_irregular').addEventListener('change', generarPreviewCuotas);
+
+    toggleCreditoSection();
+
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+});
+</script>
+{% endblock %}
