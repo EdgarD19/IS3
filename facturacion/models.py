@@ -1,6 +1,8 @@
+# facturacion/models.py
 from django.db import models
 from clientes.models import Cliente
 from django.utils import timezone
+from creditos.models import Plazo
 
 class Factura(models.Model):
     MODALIDAD_CHOICES = [
@@ -18,63 +20,42 @@ class Factura(models.Model):
 
     def __str__(self):
         return f"{self.numero} - {self.cliente.nombre}"
+    
+    @property
+    def descripcion_plazo(self):
+        if self.modalidad == 'CO':
+            return "Contado"
+        if hasattr(self, 'credito'):
+            return self.credito.get_descripcion_plazo()
+        return ""
 
 class Credito(models.Model):
-    MODALIDAD_MENSUAL = 'mensual'
-    MODALIDAD_PERSONALIZADA = 'personalizada'
-    MODALIDAD_CHOICES = [
-        (MODALIDAD_MENSUAL, 'Mensual'),
-        (MODALIDAD_PERSONALIZADA, 'Personalizada'),
-    ]
-    
     factura = models.OneToOneField(Factura, on_delete=models.CASCADE, related_name='credito')
-    cantidad_cuotas = models.PositiveIntegerField()
-    modalidad = models.CharField(max_length=20, choices=MODALIDAD_CHOICES)
+    plazo = models.ForeignKey(Plazo, on_delete=models.PROTECT)
     fecha_inicio = models.DateField(default=timezone.now)
-    dias_vencimiento = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"Crédito de {self.factura.cliente.nombre} - {self.factura.total} Gs. ({self.cantidad_cuotas} cuotas)"
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-       
-
+        return f"Crédito {self.factura.numero} - {self.plazo.nombre}"
+    
+    def get_descripcion_plazo(self):
+        detalles = self.plazo.detalles.all().order_by('numero_cuota')
+        dias = "-".join(str(detalle.dias_vencimiento) for detalle in detalles)
+        return f"CR-{dias} días"
+    
     def generar_cuotas(self):
         from datetime import timedelta
         
-        # Eliminar cuotas existentes si las hay
-        self.cuotas.all().delete()
+        self.cuotas.all().delete()  # Eliminar cuotas existentes
         
-        # Calcular fechas de vencimiento
-        if self.modalidad == self.MODALIDAD_PERSONALIZADA and self.dias_vencimiento:
-            dias = list(map(int, filter(None, self.dias_vencimiento.split(','))))
-        else:
-            # Modalidad mensual por defecto
-            dias = [30 * (i+1) for i in range(self.cantidad_cuotas)]
+        monto_cuota = self.factura.total / self.plazo.cantidad_cuotas
         
-        # Calcular monto por cuota
-        monto_cuota = self.factura.total / self.cantidad_cuotas
-        
-        # Crear cuotas
-        for i, dias_vencimiento in enumerate(dias):
+        for detalle in self.plazo.detalles.all().order_by('numero_cuota'):
             Cuota.objects.create(
                 credito=self,
-                numero=i+1,
+                numero=detalle.numero_cuota,
                 importe=monto_cuota,
-                vence=self.fecha_inicio + timedelta(days=dias_vencimiento)
+                vence=self.fecha_inicio + timedelta(days=detalle.dias_vencimiento)
             )
-
-
-    @property
-    def esta_pagado(self):
-        return not self.cuotas.filter(cobrado=False).exists()
-
-    @property
-    def tiene_morosidad(self):
-        hoy = timezone.now().date()
-        return self.cuotas.filter(cobrado=False, vence__lt=hoy).exists()
-
 
 class Cuota(models.Model):
     credito = models.ForeignKey(Credito, on_delete=models.CASCADE, related_name='cuotas')
@@ -85,9 +66,16 @@ class Cuota(models.Model):
     fecha_pago = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return f"Cuota {self.numero} de {self.credito}"
-
+        return f"Cuota {self.numero} de {self.credito.factura.numero}"
+    
+    @property
+    def estado(self):
+        if self.cobrado:
+            return "Pagado"
+        if self.esta_vencida:
+            return "Vencido"
+        return "Pendiente"
+    
     @property
     def esta_vencida(self):
-        from django.utils import timezone
         return not self.cobrado and self.vence < timezone.now().date()
