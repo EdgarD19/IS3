@@ -3,6 +3,7 @@ from django.db import models
 from clientes.models import Cliente
 from django.utils import timezone
 from creditos.models import Plazo
+from inventario.models import Producto
 
 class Factura(models.Model):
     MODALIDAD_CHOICES = [
@@ -79,3 +80,22 @@ class Cuota(models.Model):
     @property
     def esta_vencida(self):
         return not self.cobrado and self.vence < timezone.now().date()
+
+class DetalleFactura(models.Model):
+    factura = models.ForeignKey(Factura, on_delete=models.CASCADE, related_name='detalles')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
+
+    @property
+    def subtotal(self):
+        return self.cantidad * self.precio_unitario
+
+    def __str__(self):
+        return f"{self.producto.nombre} x {self.cantidad} - {self.subtotal}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Actualizar el total de la compra
+        self.factura.total = sum(detalle.subtotal for detalle in self.factura.detalles.all())
+        self.factura.save()

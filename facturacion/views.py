@@ -2,8 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
-from .models import Factura, Credito, Cuota, Cliente
-from .forms import FacturaForm
+from .models import Factura, Credito, Cuota, Cliente, DetalleFactura
+from .forms import FacturaForm,DetalleFacturaForm
+
+from django.forms import inlineformset_factory
+
+DetalleFacturaFormSet = inlineformset_factory(
+    Factura, DetalleFactura,
+    form=DetalleFacturaForm,
+    extra=1, can_delete=True
+)
 
 def lista_facturas(request):
     facturas = Factura.objects.select_related('cliente').all()
@@ -41,11 +49,27 @@ def lista_facturas(request):
 def crear_factura(request):
     if request.method == 'POST':
         form = FacturaForm(request.POST)
-        if form.is_valid():
+        formset = DetalleFacturaFormSet(request.POST)
+        if form.is_valid() and formset.is_valid():
             with transaction.atomic():
                 factura = form.save(commit=False)
-                
+                factura.total = 0
                 # Guardar la factura primero
+                factura.save()
+
+                # 2. Procesar detalles
+                for form_detalle in formset:
+                    if form_detalle.cleaned_data and not form_detalle.cleaned_data.get('DELETE', False):
+                        detalle = form_detalle.save(commit=False)
+                        detalle.factura = factura
+                        detalle.save()
+                        factura.total += detalle.subtotal
+                        
+                        # Actualizar stock
+                        producto = detalle.producto
+                        producto.stock += detalle.cantidad
+                        producto.save()
+
                 factura.save()
 
                 # Si es crédito, crear el crédito y las cuotas
@@ -77,10 +101,12 @@ def crear_factura(request):
             'modalidad': 'CO',  # Contado por defecto
             'numero': nuevo_numero
         })
+        formset = DetalleFacturaFormSet();
 
     return render(request, 'facturacion/crear_factura.html', {
         'form': form,
-        'clientes': Cliente.objects.all()
+        'clientes': Cliente.objects.all(),
+        'formset': formset
     })
 
 
@@ -107,7 +133,8 @@ def detalle_cuenta(request, factura_id):
         id=factura_id
     )
     return render(request, 'facturacion/detalle_cuenta.html', {
-        'factura': factura
+        'factura': factura,
+        'detalles':factura.detalles.all()
     })
 
 
