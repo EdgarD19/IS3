@@ -23,9 +23,10 @@ urlpatterns = [
     path('', home, name='home'),
     path('admin/', admin.site.urls),
     path('clientes/', include('clientes.urls')),
-    path('facturas/', include('facturacion.urls')),
-    path('ventas/', include('ventas.urls')),
     path('compras/', include('compras.urls')),
     path('proveedores/', include('proveedores.urls')),
+    path('ventas/', include('ventas.urls')),
+    path('', include('inventario.urls')),
+
     
 ]

@@ -18,8 +18,39 @@ DetalleCompraFormSet = inlineformset_factory(
     extra=1, can_delete=True
 )
 def lista_compras(request):
-    compras = Compra.objects.all().order_by('-fecha')
-    return render(request, 'compras/lista_compras.html', {'compras': compras})
+    compras = Compra.objects.select_related('proveedor').all()
+
+    # Filtro por proveedor
+    proveedor = request.GET.get("proveedor")
+    if proveedor:
+        compras = compras.filter(proveedor__nombre__icontains=proveedor)
+
+    # Filtro por fechas
+    fecha_inicio = request.GET.get("fecha_inicio")
+    if fecha_inicio:
+        compras = compras.filter(fecha__gte=fecha_inicio)
+
+    fecha_fin = request.GET.get("fecha_fin")
+    if fecha_fin:
+        compras = compras.filter(fecha__lte=fecha_fin)
+
+    compras = list(compras)
+
+    # Filtro por estado (pagado, moroso, curso)
+    estado = request.GET.get("estado")
+    if estado:
+        if estado == "pagado":
+            compras = [c for c in compras if (c.modalidad == 'CO') or (hasattr(c, 'credito') and c.credito.esta_pagado)]
+        elif estado == "moroso":
+            compras = [c for c in compras if hasattr(c, 'credito') and c.credito.tiene_morosidad]
+        elif estado == "curso":
+            compras = [c for c in compras if hasattr(c, 'credito') and not c.credito.esta_pagado and not c.credito.tiene_morosidad]
+
+    return render(request, 'compras/lista_compras.html', {
+        'compras': compras,
+        'seccion': 'compras'
+    })
+
 
 # views.py
 def nueva_compra(request):
@@ -51,7 +82,7 @@ def nueva_compra(request):
                     # 3. Actualizar total de compra
                     compra.save()
                     
-                    # 4. Si es crédito, crear y generar cuotas (igual que en ventas)
+                    # 4. Si es crédito, crear y generar cuotas 
                     if compra.modalidad == 'CR':
                         credito = CreditoCompra.objects.create(
                             compra=compra,

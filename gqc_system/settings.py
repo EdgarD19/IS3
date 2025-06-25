@@ -39,12 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'clientes',
-    'facturacion',
-    'ventas',
     'proveedores',
     'compras',
+    'ventas',
     'inventario',
-    'creditos'
+   
     
 ]
 
@@ -85,9 +84,9 @@ WSGI_APPLICATION = 'gqc_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'GQCsystem',
+        'NAME': 'GQGsystem',
         'USER': 'postgres',
-        'PASSWORD': 'sql$',
+        'PASSWORD': '123',
         'HOST': 'localhost',
         'PORT': '5432',
     }

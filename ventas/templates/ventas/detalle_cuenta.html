@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load filters %}
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-hand-holding-usd me-2"></i>Detalle de Venta #{{ venta.numero }}</h2>
+        <a href="{% url 'lista_ventas' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Listado
+        </a>
+    </div>
+
+    <!-- Información Básica -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr><th>Cliente:</th><td>{{ venta.cliente.nombre }}</td></tr>
+                        <tr><th>Fecha:</th><td>{{ venta.fecha|date:"d/m/Y" }}</td></tr>
+                        <tr><th>Moneda:</th><td>{{ venta.moneda }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr><th>Modalidad:</th>
+                            <td>
+                                {% if venta.modalidad == 'CO' %}
+                                    <span class="badge bg-success">CONTADO</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">CRÉDITO</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr><th>Total:</th><td>{{ venta.total|floatformat:2 }} {{ venta.moneda }}</td></tr>
+                        <tr><th>Estado:</th>
+                            <td>
+                                {% if venta.modalidad == 'CR' %}
+                                    {% if venta.credito.esta_pagado %}
+                                        <span class="badge bg-success">PAGADO COMPLETO</span>
+                                    {% elif venta.credito.tiene_morosidad %}
+                                        <span class="badge bg-danger">CON MORA</span>
+                                    {% else %}
+                                        <span class="badge bg-info">EN CURSO</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalle de Productos -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0"><i class="fas fa-boxes me-2"></i>Productos Vendidos</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-end">Cantidad</th>
+                            <th class="text-end">Precio Unitario</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                        <tr>
+                            <td>{{ detalle.producto.nombre }}</td>
+                            <td class="text-end">{{ detalle.cantidad }}</td>
+                            <td class="text-end">{{ detalle.precio_unitario|floatformat:2 }} {{ venta.moneda }}</td>
+                            <td class="text-end">{{ detalle.subtotal|floatformat:2 }} {{ venta.moneda }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No hay productos registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-active">
+                        <tr>
+                            <th colspan="3" class="text-end">Total:</th>
+                            <th class="text-end">{{ venta.total|floatformat:2 }} {{ venta.moneda }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if venta.modalidad == 'CR' and venta.credito %}
+    <!-- Plan de Pagos -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Plan de Pagos</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cuota</th>
+                            <th class="text-end">Importe</th>
+                            <th>Vencimiento</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cuota in venta.credito.cuotas.all %}
+                        <tr class="{% if cuota.pagado %}table-success{% elif cuota.vence < today and not cuota.pagado %}table-danger{% endif %}">
+                            <td>{{ cuota.numero }}/{{ venta.credito.cantidad_cuotas }}</td>
+                            <td class="text-end">{{ cuota.importe|floatformat:2 }} {{ venta.moneda }}</td>
+                            <td>{{ cuota.vence|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if cuota.pagado %}
+                                    <span class="badge bg-success">PAGADO</span>
+                                {% elif cuota.vence < today %}
+                                    <span class="badge bg-danger">VENCIDO</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">PENDIENTE</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not cuota.pagado %}
+                                <!-- Botón Modal -->
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#pagoModal{{ cuota.id }}">
+                                    <i class="fas fa-money-bill-wave me-1"></i>Pagar
+                                </button>
+
+                                <!-- Modal -->
+                                <div class="modal fade" id="pagoModal{{ cuota.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'registrar_pago_venta' cuota.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title">Registrar Pago</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Monto: <strong>{{ cuota.monto|floatformat:2 }} {{ venta.moneda }}</strong></p>
+                                                    <p>Vencimiento: {{ cuota.vence|date:"d/m/Y" }}</p>
+                                                    <div class="mb-3">
+                                                        <label for="metodo_pago{{ cuota.id }}" class="form-label">Método de Pago</label>
+                                                        <select name="metodo_pago" class="form-select" id="metodo_pago{{ cuota.id }}" required>
+                                                            <option value="">Seleccione...</option>
+                                                            <option value="Efectivo">Efectivo</option>
+                                                            <option value="Transferencia">Transferencia</option>
+                                                            <option value="Cheque">Cheque</option>
+                                                            <option value="Tarjeta">Tarjeta</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="fecha_pago{{ cuota.id }}" class="form-label">Fecha de Pago</label>
+                                                        <input type="date" name="fecha_pago" class="form-control" id="fecha_pago{{ cuota.id }}" value="{{ today|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-success">Registrar Pago</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Resumen Financiero -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card border-primary">
+                        <div class="card-header bg-light">Resumen del Crédito</div>
+                        <div class="card-body">
+                            <p><strong>Total:</strong> {{ venta.total|floatformat:2 }} {{ venta.moneda }}</p>
+                            <p><strong>Pagado:</strong> {{ venta.credito.total_pagado|floatformat:2 }} {{ venta.moneda }}</p>
+                            <p><strong>Saldo:</strong> {{ venta.credito.saldo_pendiente|floatformat:2 }} {{ venta.moneda }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-info">
+                        <div class="card-header bg-light">Detalles del Crédito</div>
+                        <div class="card-body">
+                            <p><strong>Cuotas:</strong> {{ venta.credito.cantidad_cuotas }}</p>
+                            <p><strong>Modalidad:</strong> {{ venta.credito.get_modalidad_display }}</p>
+                            <p><strong>Inicio:</strong> {{ venta.credito.fecha_inicio|date:"d/m/Y" }}</p>
+                            {% if venta.credito.modalidad == 'personalizada' %}
+                                <p><strong>Días entre cuotas:</strong> {{ venta.credito.dias_vencimiento }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

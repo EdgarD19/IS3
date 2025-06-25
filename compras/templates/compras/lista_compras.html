@@ -1,33 +1,101 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Lista de Compras</h1>
-<a href="{% url 'nueva_compra' %}" class="btn btn-primary mb-3">Nueva Compra</a>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Proveedor</th>
-            <th>Fecha</th>
-            <th>Total</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for compra in compras %}
-        <tr>
-            <td>{{ compra.numero }}</td>
-            <td>{{ compra.proveedor.nombre }}</td>
-            <td>{{ compra.fecha|date:"d/m/Y" }}</td>
-            <td>{{ compra.total|floatformat:2 }}</td>
-            <td>{{ compra.estado }}</td>
-            <td>
-                <a href="{% url 'detalle_compra' compra.id %}" class="btn btn-sm btn-info">Ver Detalle</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="6">No hay compras registradas.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-shopping-cart me-2"></i>Compras</h2>
+        <a href="{% url 'nueva_compra' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nueva Compra
+        </a>
+    </div>
+
+    <!-- Formulario de filtros -->
+    <form method="get" class="d-flex flex-wrap align-items-end gap-2 mb-4 border p-2 rounded bg-light">
+        <div class="flex-grow-1" style="min-width: 200px;">
+            <label for="proveedor" class="form-label mb-1">Proveedor</label>
+            <input type="text" name="proveedor" id="proveedor" value="{{ request.GET.proveedor }}" class="form-control form-control-sm" placeholder="Nombre del proveedor...">
+        </div>
+        <div class="flex-grow-1" style="min-width: 150px;">
+            <label for="estado" class="form-label mb-1">Estado</label>
+            <select name="estado" id="estado" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                <option value="pagado" {% if request.GET.estado == 'pagado' %}selected{% endif %}>Pagado</option>
+                <option value="moroso" {% if request.GET.estado == 'moroso' %}selected{% endif %}>Moroso</option>
+                <option value="curso" {% if request.GET.estado == 'curso' %}selected{% endif %}>En curso</option>
+            </select>
+        </div>
+        <div class="flex-grow-1" style="min-width: 130px;">
+            <label for="fecha_inicio" class="form-label mb-1">Desde</label>
+            <input type="date" name="fecha_inicio" id="fecha_inicio" value="{{ request.GET.fecha_inicio }}" class="form-control form-control-sm">
+        </div>
+        <div class="flex-grow-1" style="min-width: 130px;">
+            <label for="fecha_fin" class="form-label mb-1">Hasta</label>
+            <input type="date" name="fecha_fin" id="fecha_fin" value="{{ request.GET.fecha_fin }}" class="form-control form-control-sm">
+        </div>
+        <div>
+            <button type="submit" class="btn btn-outline-primary btn-sm px-4 py-1">Filtrar</button>
+        </div>
+    </form>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Proveedor</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Modalidad</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compra in compras %}
+                        <tr>
+                            <td>{{ compra.numero }}</td>
+                            <td>{{ compra.proveedor.nombre }}</td>
+                            <td>{{ compra.fecha|date:"d/m/Y" }}</td>
+                            <td>{{ compra.total|floatformat:2 }} {{ compra.moneda }}</td>
+                            <td>
+                                {% if compra.modalidad == 'CO' %}
+                                    <span class="badge bg-success">Contado</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Crédito</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if compra.modalidad == 'CR' and compra.credito %}
+                                    {% if compra.credito.esta_pagado %}
+                                        <span class="badge bg-success">Pagado</span>
+                                    {% elif compra.credito.tiene_morosidad %}
+                                        <span class="badge bg-danger">Moroso</span>
+                                    {% else %}
+                                        <span class="badge bg-info">En curso</span>
+                                    {% endif %}
+                                {% elif compra.modalidad == 'CO' %}
+                                    <span class="badge bg-success">Pagado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'detalle_compra' compra.id %}" class="btn btn-info btn-sm" title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No hay compras registradas.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

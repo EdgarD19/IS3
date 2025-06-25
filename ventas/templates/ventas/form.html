@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2 class="text-2xl font-bold mb-4">Nueva Venta</h2>
+<h2 class="text-2xl font-bold mb-4">Nueva Factura</h2>
 <form method="post" class="space-y-4">
     {% csrf_token %}
     {{ form.as_p }}
