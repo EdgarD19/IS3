@@ -9,12 +9,13 @@ from django.core.exceptions import ValidationError
 class CompraForm(forms.ModelForm):
     class Meta:
         model = Compra
-        fields = ['proveedor', 'fecha', 'moneda', 'modalidad']
+        fields = ['proveedor', 'fecha', 'moneda', 'modalidad','metodo_pago']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'moneda': forms.Select(attrs={'class': 'form-select'}),
             'modalidad': forms.Select(attrs={'class': 'form-select'}),
+            'metodo_pago': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):

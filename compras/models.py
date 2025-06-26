@@ -16,7 +16,7 @@ class Compra(models.Model):
     moneda = models.CharField(max_length=20, default='Guaraní')
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     modalidad = models.CharField(max_length=2, choices=MODALIDAD_CHOICES, default='CO')
-    observacion = models.TextField(blank=True, null=True)
+    metodo_pago = models.CharField(max_length=50, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.numero:
@@ -120,8 +120,4 @@ class DetalleCompra(models.Model):
     def __str__(self):
         return f"{self.producto.nombre} x {self.cantidad} - {self.subtotal}"
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        # Actualizar el total de la compra
-        self.compra.total = sum(detalle.subtotal for detalle in self.compra.detalles.all())
-        self.compra.save()
+    

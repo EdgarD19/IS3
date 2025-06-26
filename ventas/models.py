@@ -5,6 +5,7 @@ from datetime import timedelta
 from clientes.models import Cliente
 from inventario.models import Producto
 
+
 class Venta(models.Model):
     MODALIDAD_CHOICES = [
         ('CO', 'Contado'),
@@ -17,7 +18,7 @@ class Venta(models.Model):
     moneda = models.CharField(max_length=20, default='Guaraní')
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     modalidad = models.CharField(max_length=2, choices=MODALIDAD_CHOICES, default='CO')
-    observacion = models.TextField(blank=True, null=True)
+    metodo_pago = models.CharField(max_length=50, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.numero:
@@ -50,7 +51,7 @@ class CreditoVenta(models.Model):
         return f"Crédito de venta #{self.venta.numero} - {self.venta.total} {self.venta.moneda}"
 
     def generar_cuotas(self):
-        self.cuotas.all().delete()  # Eliminar cuotas existentes antes de generar nuevas
+        self.cuotas.all().delete() 
 
         if self.modalidad == self.MODALIDAD_PERSONALIZADA and self.dias_vencimiento:
             dias = list(map(int, filter(None, self.dias_vencimiento.split(','))))
@@ -60,13 +61,12 @@ class CreditoVenta(models.Model):
         importe_cuota = self.venta.total / self.cantidad_cuotas
 
         for i, dias_venc in enumerate(dias):
-            from ventas.models import CuotaVenta  # Evitar posible import circular
             CuotaVenta.objects.create(
-                credito=self,
-                numero=i + 1,
-                importe=importe_cuota,
-                vence=self.fecha_inicio + timedelta(days=dias_venc)
-            )
+            credito=self,
+            numero=i + 1,
+            importe=importe_cuota,
+            vence=self.fecha_inicio + timedelta(days=dias_venc)
+        )
 
     @property
     def esta_pagado(self):
@@ -118,7 +118,4 @@ class DetalleVenta(models.Model):
     def __str__(self):
         return f"{self.producto.nombre} x {self.cantidad} - {self.subtotal}"
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.venta.total = sum(detalle.subtotal for detalle in self.venta.detalles.all())
-        self.venta.save()
+

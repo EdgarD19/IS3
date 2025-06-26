@@ -62,6 +62,18 @@
                         <option value="USD" {% if form.moneda.value == "USD" %}selected{% endif %}>Dólar (USD)</option>
                     </select>
                 </div>
+                <div class="col-md-4">
+                    <label for="id_metodo_pago" class="form-label">Método de Pago:</label>
+                    <select class="form-select" id="id_metodo_pago" name="metodo_pago" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Efectivo" {% if form.metodo_pago.value == "Efectivo" %}selected{% endif %}>Efectivo</option>
+                        <option value="Transferencia" {% if form.metodo_pago.value == "Transferencia" %}selected{% endif %}>Transferencia Bancaria</option>
+                        <option value="Tarjeta" {% if form.metodo_pago.value == "Tarjeta" %}selected{% endif %}>Tarjeta de Crédito/Débito</option>
+                    </select>
+                    {% if form.metodo_pago.errors %}
+                        <div class="text-danger small">{{ form.metodo_pago.errors }}</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -86,7 +98,6 @@
                                 <th>Cantidad</th>
                                 <th>Precio Unitario</th>
                                 <th>Subtotal</th>
-                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -106,12 +117,12 @@
                                         {% if form.cantidad.errors %}
                                         <div class="text-danger small">{{ form.cantidad.errors }}</div>
                                         {% endif %}
-                                        <span class="input-group-text">{{ form.producto.unidad_medida|default:"u" }}</span>
+                                        <span class="input-group-text">{{ form.producto.unidad_medida }}</span>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="input-group">
-                                        <span class="input-group-text">{{ form.moneda.value|default:"PYG" }}</span>
+                                        <span class="input-group-text">{{ form.moneda.value }}</span>
                                         {{ form.precio_unitario }}
                                         {% if form.precio_unitario.errors %}
                                         <div class="text-danger small">{{ form.precio_unitario.errors }}</div>
@@ -120,11 +131,6 @@
                                 </td>
                                 <td class="subtotal">
                                     0.00
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-danger btn-sm remove-row">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -146,7 +152,7 @@
 
                 <div class="text-end mt-4">
                     <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalPago">
-                        <i class="fas fa-wallet me-2"></i>Configurar Modalidad de Pago
+                        <i class="fas fa-wallet me-2"></i>Modalidad de Pago
                     </button>
                 </div>
             </div>

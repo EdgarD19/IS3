@@ -5,6 +5,7 @@ from django.utils import timezone
 from .models import Venta, CreditoVenta, CuotaVenta, DetalleVenta
 from clientes.models import Cliente
 from .forms import VentaForm, DetalleVentaForm
+from inventario.models import Producto
 
 from django.forms import inlineformset_factory
 
@@ -34,6 +35,7 @@ def lista_ventas(request):
             ventas = [v for v in ventas if hasattr(v, 'credito') and v.credito.tiene_morosidad]
         elif estado == "curso":
             ventas = [v for v in ventas if hasattr(v, 'credito') and not v.credito.esta_pagado and not v.credito.tiene_morosidad]
+
 
     return render(request, 'ventas/lista.html', {
         'ventas': ventas,
@@ -86,10 +88,6 @@ def nueva_venta(request):
                         )
                         credito.generar_cuotas()
 
-                        messages.success(request, 'Venta a crédito creada exitosamente.')
-                    else:
-                        messages.success(request, 'Venta de contado creada exitosamente.')
-
                     return redirect('lista_ventas')
 
             except Exception as e:
@@ -111,25 +109,38 @@ def nueva_venta(request):
         })
         formset = DetalleVentaFormSet()
 
+    
+    productos = Producto.objects.all()
+
     return render(request, 'ventas/crear_venta.html', {
         'form': form,
         'clientes': Cliente.objects.all(),
-        'formset': formset
+        'formset': formset,
+        
     })
 
 def detalle_venta(request, venta_id):
     venta = get_object_or_404(
-        Venta.objects.select_related('cliente', 'credito').prefetch_related('credito__cuotas', 'detalles__producto'),
+        Venta.objects.select_related('cliente', 'credito')
+                     .prefetch_related('credito__cuotas', 'detalles__producto'),
         id=venta_id
     )
 
     detalles = venta.detalles.all()
     total_calculado = sum(detalle.subtotal for detalle in detalles)
 
+    total_pagado = 0
+    saldo = 0
+    if hasattr(venta, 'credito'):
+        total_pagado = sum(cuota.importe for cuota in venta.credito.cuotas.filter(pagado=True))
+        saldo = venta.total - total_pagado
+
     return render(request, 'ventas/detalle_cuenta.html', {
         'venta': venta,
         'detalles': detalles,
-        'total_calculado': total_calculado
+        'total_calculado': total_calculado,
+        'total_pagado': total_pagado,
+        'saldo': saldo,
     })
 
 def registrar_pago(request, cuota_id):

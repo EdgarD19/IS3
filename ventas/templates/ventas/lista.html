@@ -44,7 +44,6 @@
                             <th>ID</th>
                             <th>Cliente</th>
                             <th>Fecha</th>
-                            <th>Total</th>
                             <th>Modalidad</th>
                             <th>Estado</th>
                             <th>Acciones</th>
@@ -56,7 +55,6 @@
                             <td>{{ venta.numero }}</td>
                             <td>{{ venta.cliente.nombre }}</td>
                             <td>{{ venta.fecha|date:"d/m/Y" }}</td>
-                            <td>{{ venta.total|floatformat:2 }} {{ venta.moneda }}</td>
                             <td>
                                 {% if venta.modalidad == 'CO' %}
                                     <span class="badge bg-success">Contado</span>

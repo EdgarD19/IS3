@@ -34,7 +34,7 @@
                                 {% endif %}
                             </td>
                         </tr>
-                        <tr><th>Total:</th><td>{{ venta.total|floatformat:2 }} {{ venta.moneda }}</td></tr>
+                        <tr><th>Total:</th><td>{{  total_calculado|floatformat:2 }} {{ venta.moneda }}</td></tr>
                         <tr><th>Estado:</th>
                             <td>
                                 {% if venta.modalidad == 'CR' %}
@@ -87,7 +87,8 @@
                     <tfoot class="table-active">
                         <tr>
                             <th colspan="3" class="text-end">Total:</th>
-                            <th class="text-end">{{ venta.total|floatformat:2 }} {{ venta.moneda }}</th>
+                            <th class="text-end">{{ total_calculado|floatformat:2 }} {{ venta.moneda }}</th>
+
                         </tr>
                     </tfoot>
                 </table>
@@ -154,8 +155,7 @@
                                                             <option value="">Seleccione...</option>
                                                             <option value="Efectivo">Efectivo</option>
                                                             <option value="Transferencia">Transferencia</option>
-                                                            <option value="Cheque">Cheque</option>
-                                                            <option value="Tarjeta">Tarjeta</option>
+                                                            <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
                                                         </select>
                                                     </div>
                                                     <div class="mb-3">

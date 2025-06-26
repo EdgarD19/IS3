@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% load filters %} 
 {% block content %}
 <div class="container">
@@ -46,7 +47,7 @@
                         </tr>
                         <tr>
                             <th>Total:</th>
-                            <td>{{ total_calculado|floatformat:2 }} {{ compra.moneda }}</td>
+                            <td>{{ total_calculado|floatformat:2|intcomma }} {{ compra.moneda }}</td>
                         </tr>
                         <tr>
                             <th>Estado:</th>
@@ -239,11 +240,8 @@
                     <div class="mb-3">
                         <p><strong>Monto:</strong> {{ cuota.monto|floatformat:2 }} {{ compra.moneda }}</p>
                         <p><strong>Vencimiento:</strong> {{ cuota.vence|date:"d/m/Y" }}</p>
-                        <p><strong>Estado:</strong> 
                             {% if cuota.esta_vencida %}
                                 <span class="text-danger">Vencido hace {{ item.dias_atraso }} días</span>
-                            {% else %}
-                                <span class="text-success">Vence en {{ item.dias_restantes }} días</span>
                             {% endif %}
                         </p>
                     </div>
@@ -253,7 +251,6 @@
                             <option value="">Seleccione...</option>
                             <option value="Efectivo">Efectivo</option>
                             <option value="Transferencia">Transferencia Bancaria</option>
-                            <option value="Cheque">Cheque</option>
                             <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
                         </select>
                     </div>

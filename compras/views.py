@@ -92,7 +92,6 @@ def nueva_compra(request):
                         )
                         credito.generar_cuotas()  # Llamada explícita
                     
-                    messages.success(request, 'Compra registrada exitosamente!')
                     return redirect('lista_compras')
             
             except Exception as e:

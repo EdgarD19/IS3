@@ -8,13 +8,14 @@ from django.core.exceptions import ValidationError
 class VentaForm(forms.ModelForm):
     class Meta:
         model = Venta
-        fields = ['cliente', 'fecha', 'moneda', 'modalidad', 'numero']
+        fields = ['cliente', 'fecha', 'moneda', 'modalidad', 'numero','metodo_pago']
         widgets = {
             'cliente': forms.Select(attrs={'class': 'form-select'}),
             'fecha': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'moneda': forms.Select(attrs={'class': 'form-select'}),
             'modalidad': forms.Select(attrs={'class': 'form-select', 'onchange': 'toggleCreditFields()'}),
             'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'metodo_pago': forms.Select(attrs={'class': 'form-select'}),
         }
     
     def __init__(self, *args, **kwargs):

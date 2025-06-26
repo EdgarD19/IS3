@@ -46,7 +46,6 @@
                             <th>ID</th>
                             <th>Proveedor</th>
                             <th>Fecha</th>
-                            <th>Total</th>
                             <th>Modalidad</th>
                             <th>Estado</th>
                             <th>Acciones</th>
@@ -58,7 +57,6 @@
                             <td>{{ compra.numero }}</td>
                             <td>{{ compra.proveedor.nombre }}</td>
                             <td>{{ compra.fecha|date:"d/m/Y" }}</td>
-                            <td>{{ compra.total|floatformat:2 }} {{ compra.moneda }}</td>
                             <td>
                                 {% if compra.modalidad == 'CO' %}
                                     <span class="badge bg-success">Contado</span>
